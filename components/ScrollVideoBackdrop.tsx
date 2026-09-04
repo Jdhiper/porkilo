@@ -43,7 +43,7 @@ export default function ScrollVideoBackdrop() {
       const width = FRAME_WIDTH * scale;
       const height = FRAME_HEIGHT * scale;
       const x = (canvas.width - width) / 2;
-      const y = (canvas.height - height) / 2;
+      const y = (canvas.height - height) / 2 - window.innerHeight * 0.07;
 
       const paintFrame = (frame: number) => {
         const frameSheetIndex = Math.floor(frame / FRAMES_PER_SHEET);

@@ -53,8 +53,8 @@ export default function Countdown() {
     <section id="oferta" className="relative z-20 -mt-16 px-4 pb-4 sm:px-6" aria-labelledby="countdown-title">
       <div className="glass-panel mx-auto max-w-6xl rounded-[2rem] p-5 sm:p-7">
         <div className="grid gap-5 lg:grid-cols-[0.82fr_1.18fr] lg:items-center">
-          <div>
-            <div className="flex items-center gap-2">
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2">
               <span className="h-2 w-2 rounded-full bg-[var(--porkilo-orange)] shadow-[0_0_18px_var(--porkilo-orange)]" />
               <p className="eyebrow">Cierre de preventa</p>
             </div>
@@ -77,27 +77,33 @@ export default function Countdown() {
         </div>
 
         <div className="mt-5 border-t border-white/12 pt-5">
-          <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex flex-col items-center gap-3 text-center">
             <div>
-              <p className="eyebrow">Bonificaciones</p>
-              <h3 className="mt-2 text-xl font-bold sm:text-2xl">Esto ya viene con tu kilo. Sin costo extra.</h3>
+              <p className="eyebrow">Tu Porkilo llega completo</p>
+              <h3 className="mt-2 text-xl font-bold sm:text-2xl">Los $89.000 ya incluyen todo esto.</h3>
+              <p className="mt-1 text-sm text-white/60">Por cada kilo recibes tres acompañamientos, sin sumarlos al precio.</p>
             </div>
-            <a href="#arma-tu-pedido" className="text-xs font-black uppercase tracking-[0.14em] text-[var(--porkilo-orange-light)]">
-              Armar pedido <span aria-hidden="true">↓</span>
-            </a>
+            <button
+              type="button"
+              className="bonus-order-button"
+              onClick={() => document.getElementById("arma-tu-pedido")?.scrollIntoView({ behavior: "smooth" })}
+            >
+              Armar mi pedido <span aria-hidden="true">↓</span>
+            </button>
           </div>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            {offer.bonuses.map((bonus, index) => (
+            {offer.bonuses.map((bonus) => (
               <article key={bonus.id} className="bonus-card">
                 <div className="bonus-media">
                   {bonus.image ? (
-                    <Image src={bonus.image} alt="" fill sizes="(max-width: 768px) 5rem, 8rem" className="object-cover" />
+                    <Image src={bonus.image} alt="" fill sizes="(max-width: 768px) 5rem, 8rem" className="catalog-image object-contain" />
                   ) : (
-                    <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+                    <span aria-hidden="true">✓</span>
                   )}
                 </div>
                 <div className="min-w-0">
+                  <span className="bonus-included">Incluido</span>
                   <h4>{bonus.title}</h4>
                   <p>{bonus.description}</p>
                 </div>

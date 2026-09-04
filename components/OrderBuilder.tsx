@@ -21,9 +21,11 @@ export default function OrderBuilder() {
   const [kilos, setKilos] = useState(1);
   const [addonQuantities, setAddonQuantities] = useState<AddonQuantities>(emptyAddons);
   const selectedAddons = useMemo(() => offer.addons.filter((addon) => addonQuantities[addon.id] > 0), [addonQuantities]);
+  const productSubtotal = kilos * offer.product.price;
+  const discount = kilos >= offer.bulkDiscount.minimumKg ? Math.round(productSubtotal * offer.bulkDiscount.rate) : 0;
   const total = useMemo(
-    () => kilos * offer.product.price + selectedAddons.reduce((sum, addon) => sum + addon.price * addonQuantities[addon.id], 0),
-    [addonQuantities, kilos, selectedAddons],
+    () => productSubtotal - discount + selectedAddons.reduce((sum, addon) => sum + addon.price * addonQuantities[addon.id], 0),
+    [addonQuantities, discount, productSubtotal, selectedAddons],
   );
 
   const whatsappUrl = useMemo(() => {
@@ -34,6 +36,8 @@ export default function OrderBuilder() {
       "Hola, Porkilo 👋 Quiero reservar mi pedido:",
       "",
       `🥓 ${kilos} × ${offer.product.unit} de ${offer.product.name}`,
+      `✅ Cada kilo incluye: ${offer.bonuses.map((bonus) => bonus.title).join(", ")}`,
+      ...(discount ? [`🔥 Descuento por 3 kilos: -${formatMoney(discount)}`] : []),
       "",
       "Adicionales:",
       addonLines,
@@ -45,7 +49,7 @@ export default function OrderBuilder() {
     ].join("\n");
     const recipient = offer.whatsappNumber ? `/${offer.whatsappNumber}` : "";
     return `https://wa.me${recipient}?text=${encodeURIComponent(message)}`;
-  }, [addonQuantities, kilos, selectedAddons, total]);
+  }, [addonQuantities, discount, kilos, selectedAddons, total]);
 
   return (
     <section id="arma-tu-pedido" className="relative px-4 py-7 sm:px-6 sm:py-10">
@@ -53,21 +57,33 @@ export default function OrderBuilder() {
         <div className="mx-auto max-w-3xl text-center">
           <p className="eyebrow">Tu pedido, a tu manera</p>
           <h2 className="mt-2 text-[clamp(2.45rem,6vw,4.5rem)] font-black leading-[0.9] tracking-[-0.06em]">Arma tu Porkilo.</h2>
-          <p className="mx-auto mt-2 max-w-xl text-sm text-white/65 sm:text-base">Elige la cantidad, suma lo que se te antoje y llega a WhatsApp con todo listo.</p>
+          <p className="mx-auto mt-2 max-w-xl text-sm text-white/65 sm:text-base">Cada kilo ya viene con papas, pico de gallo y salsa ahumada. Aquí solo eliges la cantidad y, si quieres, sumas extras.</p>
+        </div>
+
+        <div className="bulk-offer mx-auto mt-5 flex max-w-3xl flex-col items-center justify-center gap-4 rounded-[1.6rem] px-5 py-4 text-center sm:flex-row">
+          <div className="discount-brand-mark" aria-hidden="true">
+            <Image src="/brand/porkilo-icon.png" alt="" fill sizes="6rem" className="object-contain" />
+            <span>8%</span>
+          </div>
+          <div>
+            <p className="eyebrow">3 kilos · Más mesa · Menos precio</p>
+            <h3 className="mt-1 text-xl font-black sm:text-2xl">Lleva 3 kilos y recibe 8% OFF.</h3>
+            <p className="mt-1 text-xs text-white/55">Lo aplicamos automáticamente. Tú solo invita a la gente.</p>
+          </div>
         </div>
 
         <div className="mt-6 grid gap-3 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
           <div className="space-y-3">
-            <div className="order-card grid gap-4 sm:grid-cols-[6.5rem_1fr_auto] sm:items-center">
+            <div className="order-card grid gap-4 text-center sm:grid-cols-[11rem_1fr_auto] sm:items-center">
               <div className="product-order-media">
-                <Image src={offer.product.image} alt="" fill sizes="7rem" className="object-contain" />
+                <Image src={offer.product.image} alt="Presentación completa de Porkilo con panceta y acompañamientos" fill sizes="(max-width: 639px) 90vw, 11rem" className="object-cover object-[100%_center]" />
               </div>
               <div className="min-w-0">
                 <span className="eyebrow">Paso 01</span>
                 <h3 className="mt-2 text-2xl font-bold">¿Cuántos kilos?</h3>
-                <p className="mt-1 text-sm text-white/60">Cada kilo rinde para {offer.product.serves}.</p>
+                <p className="mt-1 text-sm text-white/60">Cada kilo rinde para {offer.product.serves} e incluye sus tres acompañamientos.</p>
               </div>
-              <div className="quantity-control quantity-control-large" aria-label="Cantidad de kilos">
+              <div className="quantity-control quantity-control-large justify-self-center" aria-label="Cantidad de kilos">
                 <button type="button" onClick={() => setKilos(Math.max(1, kilos - 1))} disabled={kilos === 1} aria-label="Quitar un kilo">−</button>
                 <span aria-live="polite">{kilos}<small> kg</small></span>
                 <button type="button" onClick={() => setKilos(Math.min(5, kilos + 1))} disabled={kilos === 5} aria-label="Agregar un kilo">+</button>
@@ -78,15 +94,15 @@ export default function OrderBuilder() {
               Pedir {kilos} {kilos === 1 ? "kilo" : "kilos"} por WhatsApp <span aria-hidden="true">↗</span>
             </a>
 
-            <div className="order-card">
+            <div className="order-card text-center">
               <span className="eyebrow">Paso 02 · Opcional</span>
-              <h3 className="mt-2 text-2xl font-bold">Suma tus acompañantes</h3>
+              <h3 className="mt-2 text-2xl font-bold">¿Quieres porciones extra?</h3>
               <div className="mt-4 space-y-2">
                 {offer.addons.map((addon) => (
-                  <div key={addon.id} className="addon-row grid gap-3 rounded-[1.25rem] p-2.5 sm:grid-cols-[4.75rem_1fr_auto] sm:items-center">
+                  <div key={addon.id} className="addon-row grid gap-3 rounded-[1.25rem] p-2.5 text-left sm:grid-cols-[4.75rem_1fr_auto] sm:items-center">
                     <div className="addon-media">
                       {addon.image ? (
-                        <Image src={addon.image} alt="" fill sizes="5rem" className="object-cover" />
+                        <Image src={addon.image} alt="" fill sizes="5rem" className="catalog-image object-contain" />
                       ) : (
                         <span aria-hidden="true">+</span>
                       )}
@@ -116,13 +132,18 @@ export default function OrderBuilder() {
             </div>
 
             <div className="mt-5 space-y-3 border-y border-white/10 py-4 text-sm">
-              <div className="flex justify-between gap-4"><span>{kilos} × {offer.product.unit} de panceta</span><strong>{formatMoney(kilos * offer.product.price)}</strong></div>
+              <div className="flex justify-between gap-4"><span>{kilos} × {offer.product.unit} de panceta</span><strong>{formatMoney(productSubtotal)}</strong></div>
+              {discount > 0 && (
+                <div className="flex justify-between gap-4 text-[var(--porkilo-orange-light)]">
+                  <span>Descuento por 3 kilos · 8%</span><strong>− {formatMoney(discount)}</strong>
+                </div>
+              )}
               {selectedAddons.map((addon) => (
                 <div key={addon.id} className="flex justify-between gap-4 text-[var(--porkilo-muted)]">
                   <span>{addonQuantities[addon.id]} × {addon.name}</span><span>{formatMoney(addon.price * addonQuantities[addon.id])}</span>
                 </div>
               ))}
-              <div className="flex justify-between gap-4 text-[var(--porkilo-orange-light)]"><span>Bonificaciones</span><strong>Incluidas</strong></div>
+              <div className="flex justify-between gap-4 text-[var(--porkilo-orange-light)]"><span>Papas + pico de gallo + salsa</span><strong>Incluidos</strong></div>
             </div>
 
             <div className="mt-5 flex items-end justify-between gap-4">

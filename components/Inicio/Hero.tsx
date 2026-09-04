@@ -45,10 +45,10 @@ export default function Hero() {
       <div aria-hidden="true" className="hero-vignette" />
 
       <div className="relative mx-auto max-w-7xl">
-        <div className="relative z-20 max-w-xl">
-          <p className="eyebrow">Preventa semanal · Despacho el {offer.dispatch}</p>
-          <h1 className="mt-3 text-[clamp(2.75rem,6vw,5.5rem)] font-black leading-[0.88] tracking-[-0.065em]">
-            La panceta que<br /><span className="text-[var(--porkilo-orange)]">se roba la mesa.</span>
+        <div className="hero-copy relative z-20 mx-auto max-w-5xl text-center">
+          <p className="eyebrow">Preventa semanal · Domingo en Pasto</p>
+          <h1 className="hero-title mt-3 text-[clamp(3.25rem,8.5vw,5rem)] font-black leading-[0.8] tracking-[-0.075em]">
+            ¡El Domingo!<br /><span>Ya quedo resuelto.</span>
           </h1>
         </div>
 
@@ -64,16 +64,17 @@ export default function Hero() {
           />
         </div>
 
-        <div className="relative z-20 mt-[32svh] ml-auto w-full max-w-xl sm:mt-[28svh] lg:mt-[24svh]">
+        <div className="relative z-20 mx-auto mt-[30svh] w-full max-w-xl sm:mt-[25svh] lg:mt-[21svh]">
           <div className="hero-offer-card grid items-center gap-4 rounded-[1.6rem] p-4 sm:grid-cols-[1fr_auto] sm:p-5">
-            <div className="flex items-center justify-between gap-5 sm:block">
+            <div className="flex flex-col items-center">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">1 kilo · {offer.product.serves}</span>
-                <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--porkilo-orange-light)]">El combo completo · {offer.product.serves}</span>
+                <div className="mt-1 flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
                   <strong className="text-3xl font-black tracking-[-0.05em] sm:text-4xl">{formatMoney(offer.product.price)}</strong>
-                  <span className="text-xs text-white/45 line-through">{formatMoney(offer.product.referencePrice)}</span>
+                  <span className="text-xs text-white/50"><span className="sr-only">Valor regular </span><span className="line-through">{formatMoney(offer.product.referencePrice)}</span></span>
                 </div>
               </div>
+              <p className="mt-1 text-xs font-semibold text-white/75">1 kg de panceta + papas + pico de gallo + salsa ahumada</p>
               <span className="stock-pill">Solo {offer.stockKg} disponibles</span>
             </div>
             <a className="cta-primary min-w-44" href="#arma-tu-pedido">Pedir ahora <span aria-hidden="true">↓</span></a>

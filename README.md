@@ -12,7 +12,7 @@ Los datos que cambian cada semana viven en `data/offer.ts`:
 - hora de cierre y día de despacho;
 - bonificaciones y adicionales.
 
-El número de WhatsApp se deja vacío durante desarrollo. En ese estado, el botón abre WhatsApp con el mensaje listo pero sin destinatario fijo.
+El número de WhatsApp está configurado en formato internacional dentro de `data/offer.ts`. Los botones generan el resumen completo y abren la conversación directamente con Porkilo.
 
 ## Imágenes de bonificaciones y adicionales
 
