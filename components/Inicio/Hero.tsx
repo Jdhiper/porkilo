@@ -78,7 +78,7 @@ export default function Hero() {
                   <strong className="mt-1 block text-xl font-black tracking-[-0.05em] sm:text-2xl">{formatMoney(offer.product.price)}</strong>
                 </div>
               </div>
-              <p className="mt-2 text-xs font-semibold text-white/75">Ambos incluyen papas cocinadas + 2 toppings a elección</p>
+              <p className="mt-2 text-xs font-semibold leading-relaxed text-white/75">Papas cocinadas, ají, maduro, arepitas + 2 toppings a elección</p>
               <span className="stock-pill">Solo {offer.stockKg} disponibles</span>
             </div>
             <a className="cta-primary min-w-44" href="#arma-tu-pedido">Pedir ahora <span aria-hidden="true">↓</span></a>

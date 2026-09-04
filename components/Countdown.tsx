@@ -81,7 +81,7 @@ export default function Countdown() {
             <div>
               <p className="eyebrow">Tu Porkilo llega completo</p>
               <h3 className="mt-2 text-xl font-bold sm:text-2xl">Los $89.000 ya incluyen todo esto.</h3>
-              <p className="mt-1 text-sm text-white/60">Por cada kilo recibes tres acompañamientos, sin sumarlos al precio.</p>
+              <p className="mt-1 text-sm text-white/60">Papas, ají, maduro, arepitas y tus toppings, sin sumarlos al precio.</p>
             </div>
             <button
               type="button"
@@ -92,7 +92,7 @@ export default function Countdown() {
             </button>
           </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {offer.bonuses.map((bonus) => (
               <article key={bonus.id} className="bonus-card">
                 <div className="bonus-media">

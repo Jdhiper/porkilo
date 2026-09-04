@@ -6,8 +6,10 @@ import { formatMoney, offer } from "@/data/offer";
 import { trackMetaEvent } from "@/lib/meta";
 
 type AddonQuantities = Record<(typeof offer.addons)[number]["id"], number>;
+type BeverageQuantities = Record<(typeof offer.beverages)[number]["id"], number>;
 type ToppingQuantities = Record<(typeof offer.toppings)[number]["id"], number>;
 const emptyAddons = Object.fromEntries(offer.addons.map((addon) => [addon.id, 0])) as AddonQuantities;
+const emptyBeverages = Object.fromEntries(offer.beverages.map((beverage) => [beverage.id, 0])) as BeverageQuantities;
 const initialToppings = Object.fromEntries(
   offer.toppings.map((topping, index) => [topping.id, index < 2 ? 1 : 0]),
 ) as ToppingQuantities;
@@ -36,16 +38,21 @@ export default function OrderBuilder() {
   const [kilos, setKilos] = useState(1);
   const [toppingQuantities, setToppingQuantities] = useState<ToppingQuantities>(initialToppings);
   const [addonQuantities, setAddonQuantities] = useState<AddonQuantities>(emptyAddons);
+  const [beverageQuantities, setBeverageQuantities] = useState<BeverageQuantities>(emptyBeverages);
   const toppingAllowance = Math.max(2, Math.round(kilos * 2));
   const selectedToppingPortions = Object.values(toppingQuantities).reduce((sum, quantity) => sum + quantity, 0);
   const toppingsComplete = selectedToppingPortions === toppingAllowance;
   const selectedToppings = offer.toppings.filter((topping) => toppingQuantities[topping.id] > 0);
   const selectedAddons = useMemo(() => offer.addons.filter((addon) => addonQuantities[addon.id] > 0), [addonQuantities]);
+  const selectedBeverages = useMemo(() => offer.beverages.filter((beverage) => beverageQuantities[beverage.id] > 0), [beverageQuantities]);
   const productSubtotal = getProductSubtotal(kilos);
   const discount = kilos >= offer.bulkDiscount.minimumKg ? Math.round(productSubtotal * offer.bulkDiscount.rate) : 0;
   const total = useMemo(
-    () => productSubtotal - discount + selectedAddons.reduce((sum, addon) => sum + addon.price * addonQuantities[addon.id], 0),
-    [addonQuantities, discount, productSubtotal, selectedAddons],
+    () => productSubtotal
+      - discount
+      + selectedAddons.reduce((sum, addon) => sum + addon.price * addonQuantities[addon.id], 0)
+      + selectedBeverages.reduce((sum, beverage) => sum + beverage.price * beverageQuantities[beverage.id], 0),
+    [addonQuantities, beverageQuantities, discount, productSubtotal, selectedAddons, selectedBeverages],
   );
 
   const changeKilos = (nextValue: number) => {
@@ -82,11 +89,14 @@ export default function OrderBuilder() {
     const toppingLines = selectedToppings
       .map((topping) => `- ${toppingQuantities[topping.id]} x ${topping.name}`)
       .join("\n");
+    const beverageLines = selectedBeverages.length
+      ? selectedBeverages.map((beverage) => `- ${beverageQuantities[beverage.id]} x ${beverage.name}`).join("\n")
+      : "- Sin bebidas";
     const message = [
       "Hola, Porkilo. Quiero reservar mi pedido:",
       "",
       `Pedido: ${formatKilos(kilos)} kg de ${offer.product.name}`,
-      "Papas cocinadas incluidas",
+      "Incluye papas cocinadas, ají, plátano maduro y arepitas blancas",
       ...(discount ? [`Descuento por 3 kilos: -${formatMoney(discount)}`] : []),
       "",
       `Toppings incluidos (${selectedToppingPortions}/${toppingAllowance}):`,
@@ -95,6 +105,9 @@ export default function OrderBuilder() {
       "Adicionales:",
       addonLines,
       "",
+      "Bebidas:",
+      beverageLines,
+      "",
       `Total estimado: ${formatMoney(total)}`,
       `Despacho: ${offer.dispatch}`,
       "",
@@ -102,7 +115,7 @@ export default function OrderBuilder() {
     ].join("\n");
     const recipient = offer.whatsappNumber ? `/${offer.whatsappNumber}` : "";
     return `https://wa.me${recipient}?text=${encodeURIComponent(message)}`;
-  }, [addonQuantities, discount, kilos, selectedAddons, selectedToppingPortions, selectedToppings, toppingAllowance, toppingQuantities, total]);
+  }, [addonQuantities, beverageQuantities, discount, kilos, selectedAddons, selectedBeverages, selectedToppingPortions, selectedToppings, toppingAllowance, toppingQuantities, total]);
 
   const handleOrderClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (!toppingsComplete) {
@@ -126,7 +139,7 @@ export default function OrderBuilder() {
         <div className="mx-auto max-w-3xl text-center">
           <p className="eyebrow">Tu pedido, a tu manera</p>
           <h2 className="mt-2 text-[clamp(2.45rem,6vw,4.5rem)] font-black leading-[0.9] tracking-[-0.06em]">Arma tu Porkilo.</h2>
-          <p className="mx-auto mt-2 max-w-xl text-sm text-white/65 sm:text-base">Medio kilo o un kilo incluyen papas cocinadas y 2 toppings. Cada medio kilo adicional suma otra porción.</p>
+          <p className="mx-auto mt-2 max-w-2xl text-sm text-white/65 sm:text-base">Medio kilo o un kilo incluyen papas cocinadas, ají, plátano maduro, arepitas blancas y 2 toppings. Cada medio kilo adicional suma otra porción de topping.</p>
         </div>
 
         <div className="bulk-offer mx-auto mt-5 flex max-w-3xl flex-col items-center justify-center gap-4 rounded-[1.6rem] px-5 py-4 text-center sm:flex-row">
@@ -151,7 +164,7 @@ export default function OrderBuilder() {
                 <div className="min-w-0">
                   <span className="eyebrow">Paso 01</span>
                   <h3 className="mt-2 text-2xl font-bold">¿Cuánta panceta?</h3>
-                  <p className="mt-1 text-sm text-white/60">Desde ½ kilo por {formatMoney(offer.product.halfKgPrice)}. Incluye papas cocinadas listas para servir.</p>
+                  <p className="mt-1 text-sm text-white/60">Desde ½ kilo por {formatMoney(offer.product.halfKgPrice)}. Llega con todos los acompañamientos listo para servir.</p>
                 </div>
                 <div className="quantity-control quantity-control-large justify-self-center" aria-label="Cantidad de panceta">
                   <button type="button" onClick={() => changeKilos(kilos - 0.5)} disabled={kilos === 0.5} aria-label="Quitar medio kilo">−</button>
@@ -231,11 +244,42 @@ export default function OrderBuilder() {
                 ))}
               </div>
             </div>
+
+            <div className="order-card text-center">
+              <span className="eyebrow">Paso 03 · Bebidas</span>
+              <h3 className="mt-2 text-2xl font-bold">Algo frío para la mesa</h3>
+              <p className="mx-auto mt-1 max-w-lg text-sm text-white/58">Agrega tu bebida sin mezclarla con los acompañamientos o toppings.</p>
+              <div className="mt-4 space-y-2">
+                {offer.beverages.map((beverage) => (
+                  <div key={beverage.id} className="addon-row grid gap-3 rounded-[1.25rem] p-2.5 text-left sm:grid-cols-[4.75rem_1fr_auto] sm:items-center">
+                    <div className="addon-media">
+                      {beverage.image ? (
+                        <Image src={beverage.image} alt="" fill sizes="5rem" className="catalog-image object-contain" />
+                      ) : (
+                        <span aria-hidden="true">+</span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                        <h4 className="font-bold">{beverage.name}</h4>
+                        <span className="text-sm font-semibold text-[var(--porkilo-orange-light)]">+ {formatMoney(beverage.price)}</span>
+                      </div>
+                      <p className="mt-1 text-sm text-white/58">{beverage.description}</p>
+                    </div>
+                    <QuantityControl
+                      value={beverageQuantities[beverage.id]}
+                      label={beverage.name}
+                      onChange={(value) => setBeverageQuantities((current) => ({ ...current, [beverage.id]: Math.min(9, value) }))}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <aside className="summary-card lg:sticky lg:top-28" aria-labelledby="summary-title">
             <div className="flex items-start justify-between gap-4">
-              <div><span className="eyebrow">Paso 03</span><h3 id="summary-title" className="mt-2 text-2xl font-bold">Tu reserva</h3></div>
+              <div><span className="eyebrow">Paso 04</span><h3 id="summary-title" className="mt-2 text-2xl font-bold">Tu reserva</h3></div>
               <span className="rounded-full bg-[var(--porkilo-orange)]/15 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--porkilo-orange-light)]">{offer.dispatch}</span>
             </div>
 
@@ -251,7 +295,12 @@ export default function OrderBuilder() {
                   <span>{addonQuantities[addon.id]} × {addon.name}</span><span>{formatMoney(addon.price * addonQuantities[addon.id])}</span>
                 </div>
               ))}
-              <div className="flex justify-between gap-4 text-[var(--porkilo-orange-light)]"><span>Papas cocinadas</span><strong>Incluidas</strong></div>
+              {selectedBeverages.map((beverage) => (
+                <div key={beverage.id} className="flex justify-between gap-4 text-[var(--porkilo-muted)]">
+                  <span>{beverageQuantities[beverage.id]} × {beverage.name}</span><span>{formatMoney(beverage.price * beverageQuantities[beverage.id])}</span>
+                </div>
+              ))}
+              <div className="flex justify-between gap-4 text-[var(--porkilo-orange-light)]"><span>Papas, ají, maduro y arepitas</span><strong>Incluidos</strong></div>
               <div className="flex justify-between gap-4 text-[var(--porkilo-orange-light)]"><span>{selectedToppingPortions}/{toppingAllowance} toppings</span><strong>{toppingsComplete ? "Listos" : "Por completar"}</strong></div>
               {selectedToppings.map((topping) => (
                 <div key={topping.id} className="flex justify-between gap-4 text-[var(--porkilo-muted)]">
