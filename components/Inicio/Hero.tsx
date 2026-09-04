@@ -74,7 +74,8 @@ export default function Hero() {
                   <span className="text-xs text-white/50"><span className="sr-only">Valor regular </span><span className="line-through">{formatMoney(offer.product.referencePrice)}</span></span>
                 </div>
               </div>
-              <p className="mt-1 text-xs font-semibold text-white/75">1 kg de panceta + papas + pico de gallo + salsa ahumada</p>
+              <p className="mt-1 text-xs font-semibold text-white/75">1 kg de panceta + papas cocinadas + 2 toppings a elección</p>
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/45">También ½ kilo por {formatMoney(offer.product.halfKgPrice)} · con 2 toppings</p>
               <span className="stock-pill">Solo {offer.stockKg} disponibles</span>
             </div>
             <a className="cta-primary min-w-44" href="#arma-tu-pedido">Pedir ahora <span aria-hidden="true">↓</span></a>
