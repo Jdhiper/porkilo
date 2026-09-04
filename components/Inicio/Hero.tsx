@@ -66,16 +66,19 @@ export default function Hero() {
 
         <div className="relative z-20 mx-auto mt-[30svh] w-full max-w-xl sm:mt-[25svh] lg:mt-[21svh]">
           <div className="hero-offer-card grid items-center gap-4 rounded-[1.6rem] p-4 sm:grid-cols-[1fr_auto] sm:p-5">
-            <div className="flex flex-col items-center">
-              <div>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--porkilo-orange-light)]">El combo completo · {offer.product.serves}</span>
-                <div className="mt-1 flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
-                  <strong className="text-3xl font-black tracking-[-0.05em] sm:text-4xl">{formatMoney(offer.product.price)}</strong>
-                  <span className="text-xs text-white/50"><span className="sr-only">Valor regular </span><span className="line-through">{formatMoney(offer.product.referencePrice)}</span></span>
+            <div className="flex min-w-0 flex-col items-center">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--porkilo-orange-light)]">Dos tamaños para empezar</span>
+              <div className="mt-2 grid w-full grid-cols-2 gap-2">
+                <div className="rounded-2xl border border-white/10 bg-black/20 px-2 py-2.5">
+                  <span className="block text-[9px] font-black uppercase tracking-[0.12em] text-white/50">1 libra · ½ kg</span>
+                  <strong className="mt-1 block text-xl font-black tracking-[-0.05em] sm:text-2xl">{formatMoney(offer.product.halfKgPrice)}</strong>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-black/20 px-2 py-2.5">
+                  <span className="block text-[9px] font-black uppercase tracking-[0.12em] text-white/50">1 kilo · {offer.product.serves}</span>
+                  <strong className="mt-1 block text-xl font-black tracking-[-0.05em] sm:text-2xl">{formatMoney(offer.product.price)}</strong>
                 </div>
               </div>
-              <p className="mt-1 text-xs font-semibold text-white/75">1 kg de panceta + papas cocinadas + 2 toppings a elección</p>
-              <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/45">También ½ kilo por {formatMoney(offer.product.halfKgPrice)} · con 2 toppings</p>
+              <p className="mt-2 text-xs font-semibold text-white/75">Ambos incluyen papas cocinadas + 2 toppings a elección</p>
               <span className="stock-pill">Solo {offer.stockKg} disponibles</span>
             </div>
             <a className="cta-primary min-w-44" href="#arma-tu-pedido">Pedir ahora <span aria-hidden="true">↓</span></a>

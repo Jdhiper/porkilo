@@ -76,17 +76,17 @@ export default function OrderBuilder() {
 
   const whatsappUrl = useMemo(() => {
     const addonLines = selectedAddons.length
-      ? selectedAddons.map((addon) => `• ${addonQuantities[addon.id]} × ${addon.name}`).join("\n")
-      : "• Sin adicionales";
+      ? selectedAddons.map((addon) => `- ${addonQuantities[addon.id]} x ${addon.name}`).join("\n")
+      : "- Sin adicionales";
     const toppingLines = selectedToppings
-      .map((topping) => `• ${toppingQuantities[topping.id]} × ${topping.name}`)
+      .map((topping) => `- ${toppingQuantities[topping.id]} x ${topping.name}`)
       .join("\n");
     const message = [
-      "Hola, Porkilo 👋 Quiero reservar mi pedido:",
+      "Hola, Porkilo. Quiero reservar mi pedido:",
       "",
-      `🥓 ${formatKilos(kilos)} kg de ${offer.product.name}`,
-      "🥔 Papas cocinadas incluidas",
-      ...(discount ? [`🔥 Descuento por 3 kilos: -${formatMoney(discount)}`] : []),
+      `Pedido: ${formatKilos(kilos)} kg de ${offer.product.name}`,
+      "Papas cocinadas incluidas",
+      ...(discount ? [`Descuento por 3 kilos: -${formatMoney(discount)}`] : []),
       "",
       `Toppings incluidos (${selectedToppingPortions}/${toppingAllowance}):`,
       toppingLines,
@@ -97,7 +97,7 @@ export default function OrderBuilder() {
       `Total estimado: ${formatMoney(total)}`,
       `Despacho: ${offer.dispatch}`,
       "",
-      "¿Me confirman disponibilidad y horario de entrega?",
+      "Por favor, confirmen disponibilidad y horario de entrega.",
     ].join("\n");
     const recipient = offer.whatsappNumber ? `/${offer.whatsappNumber}` : "";
     return `https://wa.me${recipient}?text=${encodeURIComponent(message)}`;
