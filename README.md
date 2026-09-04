@@ -26,6 +26,18 @@ npm run dev
 
 Abre [http://localhost:3000](http://localhost:3000).
 
+## Meta Pixel y API de conversiones
+
+La web envía `PageView` al cargar y `InitiateCheckout` cuando un pedido válido abre WhatsApp. El evento del navegador y el del servidor comparten `event_id`, por lo que Meta puede deduplicarlos.
+
+Configura estas variables en Vercel, dentro de **Project Settings → Environment Variables**:
+
+- `NEXT_PUBLIC_META_PIXEL_ID`: identificador del píxel o conjunto de datos.
+- `META_CONVERSIONS_API_TOKEN`: token secreto de la API de conversiones. Nunca debe llevar el prefijo `NEXT_PUBLIC_`.
+- `META_TEST_EVENT_CODE`: opcional y temporal para validar la integración en **Administrador de eventos → Probar eventos**.
+
+Para trabajar localmente, copia `.env.example` como `.env.local` y reemplaza los valores de ejemplo. Después de modificar variables en Vercel es necesario crear un nuevo despliegue.
+
 ## Alcance del MVP
 
 Incluye experiencia visual, contador de preventa, escasez, oferta, bonificaciones, configurador, cálculo del total y generación del pedido para WhatsApp. No incluye pagos, usuarios, base de datos, CRM ni inventario en tiempo real.

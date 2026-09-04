@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import { formatMoney, offer } from "@/data/offer";
+import { trackMetaEvent } from "@/lib/meta";
 
 type AddonQuantities = Record<(typeof offer.addons)[number]["id"], number>;
 type ToppingQuantities = Record<(typeof offer.toppings)[number]["id"], number>;
@@ -104,9 +105,19 @@ export default function OrderBuilder() {
   }, [addonQuantities, discount, kilos, selectedAddons, selectedToppingPortions, selectedToppings, toppingAllowance, toppingQuantities, total]);
 
   const handleOrderClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    if (toppingsComplete) return;
-    event.preventDefault();
-    document.getElementById("toppings-incluidos")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (!toppingsComplete) {
+      event.preventDefault();
+      document.getElementById("toppings-incluidos")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
+    trackMetaEvent("InitiateCheckout", {
+      currency: "COP",
+      value: total,
+      content_name: offer.product.name,
+      content_type: "product",
+      num_items: kilos,
+    });
   };
 
   return (
