@@ -10,6 +10,7 @@ export const offer = {
     label: "domingo a las 11:00 a. m.",
   },
   dispatch: "domingo",
+  delivery: "Domicilio gratis",
   stockKg: 18,
   product: {
     name: "Panceta Porkilo",

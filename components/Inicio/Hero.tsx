@@ -80,7 +80,7 @@ export default function Hero() {
                 </div>
               </div>
               <p className="mt-2 text-xs font-semibold leading-relaxed text-white/75">Papas cocinadas, ají, maduro, arepitas + 2 toppings a elección</p>
-              <span className="stock-pill">Solo {offer.stockKg} disponibles</span>
+              <span className="stock-pill">¡Solo quedan {offer.stockKg} kilos disponibles!</span>
             </div>
             <a className="cta-primary min-w-44" href="#arma-tu-pedido" onClick={() => trackFunnelEvent("cta_hero_click")}>Pedir ahora <span aria-hidden="true">↓</span></a>
           </div>

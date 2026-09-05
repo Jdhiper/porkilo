@@ -1,9 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { offer } from "@/data/offer";
-import { trackFunnelEvent } from "@/lib/funnel-analytics";
 
 type TimeLeft = {
   days: number;
@@ -51,8 +49,8 @@ export default function Countdown() {
   }, [target]);
 
   return (
-    <section id="oferta" className="relative z-20 -mt-16 px-4 pb-4 sm:px-6" aria-labelledby="countdown-title">
-      <div className="glass-panel mx-auto max-w-6xl rounded-[2rem] p-5 sm:p-7">
+    <section id="cierre-pedidos" className="relative z-20 scroll-mt-24" aria-labelledby="countdown-title">
+      <div className="glass-panel mx-auto max-w-4xl rounded-[2rem] p-5 sm:p-7">
         <div className="grid gap-5 lg:grid-cols-[0.82fr_1.18fr] lg:items-center">
           <div className="text-center">
             <div className="flex items-center justify-center gap-2">
@@ -63,7 +61,8 @@ export default function Countdown() {
               Pide antes del {offer.cutoff.label}
             </h2>
             <p className="mt-2 text-sm text-[var(--porkilo-muted)]">
-              Próximo despacho: <strong className="text-white">{offer.dispatch}</strong> · Solo {offer.stockKg} kilos por tanda.
+              Próximo despacho: <strong className="text-white">{offer.dispatch}</strong>
+              <strong className="countdown-stock">¡Solo quedan {offer.stockKg} kilos!</strong>
             </p>
           </div>
 
@@ -73,45 +72,6 @@ export default function Countdown() {
                 <strong>{timeLeft ? String(timeLeft[key]).padStart(2, "0") : "—"}</strong>
                 <span>{label}</span>
               </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-5 border-t border-white/12 pt-5">
-          <div className="flex flex-col items-center gap-3 text-center">
-            <div>
-              <p className="eyebrow">Tu Porkilo llega completo</p>
-              <h3 className="mt-2 text-xl font-bold sm:text-2xl">Los $89.000 ya incluyen todo esto.</h3>
-              <p className="mt-1 text-sm text-white/60">Papas, ají, maduro, arepitas y tus toppings, sin sumarlos al precio.</p>
-            </div>
-            <button
-              type="button"
-              className="bonus-order-button"
-              onClick={() => {
-                trackFunnelEvent("cta_offer_click");
-                document.getElementById("arma-tu-pedido")?.scrollIntoView({ behavior: "smooth" });
-              }}
-            >
-              Armar mi pedido <span aria-hidden="true">↓</span>
-            </button>
-          </div>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {offer.bonuses.map((bonus) => (
-              <article key={bonus.id} className="bonus-card">
-                <div className="bonus-media">
-                  {bonus.image ? (
-                    <Image src={bonus.image} alt="" fill sizes="(max-width: 768px) 5rem, 8rem" className="catalog-image object-contain" />
-                  ) : (
-                    <span aria-hidden="true">✓</span>
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <span className="bonus-included">Incluido</span>
-                  <h4>{bonus.title}</h4>
-                  <p>{bonus.description}</p>
-                </div>
-              </article>
             ))}
           </div>
         </div>

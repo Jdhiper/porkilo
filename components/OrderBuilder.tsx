@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
+import Countdown from "@/components/Countdown";
 import { formatMoney, offer } from "@/data/offer";
 import { trackFunnelEvent, trackFunnelEventOnce } from "@/lib/funnel-analytics";
 import { trackMetaEvent } from "@/lib/meta";
@@ -11,9 +12,7 @@ type BeverageQuantities = Record<(typeof offer.beverages)[number]["id"], number>
 type ToppingQuantities = Record<(typeof offer.toppings)[number]["id"], number>;
 const emptyAddons = Object.fromEntries(offer.addons.map((addon) => [addon.id, 0])) as AddonQuantities;
 const emptyBeverages = Object.fromEntries(offer.beverages.map((beverage) => [beverage.id, 0])) as BeverageQuantities;
-const initialToppings = Object.fromEntries(
-  offer.toppings.map((topping, index) => [topping.id, index < 2 ? 1 : 0]),
-) as ToppingQuantities;
+const emptyToppings = Object.fromEntries(offer.toppings.map((topping) => [topping.id, 0])) as ToppingQuantities;
 
 function formatKilos(value: number) {
   return value.toLocaleString("es-CO", { maximumFractionDigits: 1 });
@@ -36,8 +35,8 @@ function QuantityControl({ value, onChange, label, disableAdd = false }: { value
 }
 
 export default function OrderBuilder() {
-  const [kilos, setKilos] = useState(1);
-  const [toppingQuantities, setToppingQuantities] = useState<ToppingQuantities>(initialToppings);
+  const [kilos, setKilos] = useState(0.5);
+  const [toppingQuantities, setToppingQuantities] = useState<ToppingQuantities>(emptyToppings);
   const [addonQuantities, setAddonQuantities] = useState<AddonQuantities>(emptyAddons);
   const [beverageQuantities, setBeverageQuantities] = useState<BeverageQuantities>(emptyBeverages);
   const toppingAllowance = Math.max(2, Math.round(kilos * 2));
@@ -96,17 +95,24 @@ export default function OrderBuilder() {
         }),
       ) as ToppingQuantities;
 
-      const preferred = offer.toppings.filter((topping) => current[topping.id] > 0);
-      const fillWith = preferred.length ? preferred : offer.toppings.slice(0, 2);
-      let index = 0;
-      while (remaining > 0) {
-        const topping = fillWith[index % fillWith.length];
-        next[topping.id] += 1;
-        remaining -= 1;
-        index += 1;
-      }
       return next;
     });
+  };
+
+  const toggleTopping = (toppingId: (typeof offer.toppings)[number]["id"]) => {
+    if (toppingQuantities[toppingId] > 0) {
+      setToppingQuantities((current) => ({ ...current, [toppingId]: 0 }));
+      return;
+    }
+    if (selectedToppingPortions >= toppingAllowance) return;
+    trackFunnelEvent("topping_selected", { item: toppingId });
+    setToppingQuantities((current) => ({ ...current, [toppingId]: 1 }));
+  };
+
+  const toggleBeverage = (beverageId: (typeof offer.beverages)[number]["id"]) => {
+    const nextQuantity = beverageQuantities[beverageId] > 0 ? 0 : 1;
+    if (nextQuantity > 0) trackFunnelEvent("beverage_added", { item: beverageId, quantity: 1 });
+    setBeverageQuantities((current) => ({ ...current, [beverageId]: nextQuantity }));
   };
 
   const whatsappUrl = useMemo(() => {
@@ -136,6 +142,7 @@ export default function OrderBuilder() {
       beverageLines,
       "",
       `Total estimado: ${formatMoney(total)}`,
+      "Domicilio: Gratis",
       `Despacho: ${offer.dispatch}`,
       "",
       "Por favor, confirmen disponibilidad y horario de entrega.",
@@ -193,10 +200,9 @@ export default function OrderBuilder() {
           </div>
         </div>
 
-        <div className="mt-6 grid gap-3 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
-          <div className="space-y-3">
+        <div className="mx-auto mt-6 max-w-4xl space-y-3">
             <div className="order-card text-center">
-              <div className="grid gap-4 sm:grid-cols-[9.5rem_1fr_auto] sm:items-center">
+              <div className="grid gap-4 sm:grid-cols-[9.5rem_1fr] sm:items-center">
                 <div className="product-order-media">
                   <Image src={offer.product.image} alt="Presentación completa de Porkilo con panceta y acompañamientos" fill sizes="(max-width: 639px) 18rem, 9.5rem" className="object-cover" />
                 </div>
@@ -205,12 +211,33 @@ export default function OrderBuilder() {
                   <h3 className="mt-2 text-2xl font-bold">¿Cuánta panceta?</h3>
                   <p className="mt-1 text-sm text-white/60">Desde ½ kilo por {formatMoney(offer.product.halfKgPrice)}. Llega con todos los acompañamientos listo para servir.</p>
                 </div>
-                <div className="quantity-control quantity-control-large justify-self-center" aria-label="Cantidad de panceta">
-                  <button type="button" onClick={() => changeKilos(kilos - 0.5)} disabled={kilos === 0.5} aria-label="Quitar medio kilo">−</button>
-                  <span aria-live="polite">{formatKilos(kilos)}<small> kg</small></span>
-                  <button type="button" onClick={() => changeKilos(kilos + 0.5)} disabled={kilos === 5} aria-label="Agregar medio kilo">+</button>
-                </div>
               </div>
+
+              <div className="product-size-grid mt-5" aria-label="Elige la cantidad de panceta">
+                <button type="button" className={`product-size-button ${kilos === 0.5 ? "is-selected" : ""}`} aria-pressed={kilos === 0.5} onClick={() => changeKilos(0.5)}>
+                  <span>1 libra</span><strong>½ kilo</strong><small>{formatMoney(offer.product.halfKgPrice)}</small>
+                </button>
+                <button type="button" className={`product-size-button ${kilos === 1 ? "is-selected" : ""}`} aria-pressed={kilos === 1} onClick={() => changeKilos(1)}>
+                  <span>Para compartir</span><strong>1 kilo</strong><small>{formatMoney(offer.product.price)}</small>
+                </button>
+                <button type="button" className={`product-size-button ${kilos > 1 ? "is-selected" : ""}`} aria-pressed={kilos > 1} onClick={() => changeKilos(kilos > 1 ? kilos : 1.5)}>
+                  <span>Mesa grande</span><strong>Más de 1 kilo</strong><small>Desde 1,5 kg</small>
+                </button>
+              </div>
+
+              {kilos > 1 && (
+                <div className="more-kilos-panel mt-3">
+                  <div className="text-left">
+                    <span className="eyebrow">Cantidad para tu mesa</span>
+                    <p className="mt-1 text-sm text-white/60">Suma o resta por medios kilos hasta completar tu pedido.</p>
+                  </div>
+                  <div className="quantity-control quantity-control-large" aria-label="Cantidad de panceta mayor a un kilo">
+                    <button type="button" onClick={() => changeKilos(Math.max(1.5, kilos - 0.5))} disabled={kilos === 1.5} aria-label="Quitar medio kilo">−</button>
+                    <span aria-live="polite">{formatKilos(kilos)}<small> kg</small></span>
+                    <button type="button" onClick={() => changeKilos(kilos + 0.5)} disabled={kilos === 5} aria-label="Agregar medio kilo">+</button>
+                  </div>
+                </div>
+              )}
 
               <div id="toppings-incluidos" data-funnel-event="02_toppings_view" className="mt-5 border-t border-white/10 pt-5">
                 <div className="flex flex-col items-center justify-between gap-2 sm:flex-row sm:text-left">
@@ -224,14 +251,26 @@ export default function OrderBuilder() {
 
                 <div className="mt-4 grid gap-2 sm:grid-cols-2">
                   {offer.toppings.map((topping) => (
-                    <article key={topping.id} className="topping-card grid grid-cols-[4.25rem_1fr] items-center gap-3 rounded-[1.2rem] p-2.5 text-left">
+                    <article key={topping.id} className={`topping-card rounded-[1.2rem] p-2.5 text-left ${toppingQuantities[topping.id] > 0 ? "is-selected" : ""}`}>
+                      <button
+                        type="button"
+                        className="choice-button grid w-full grid-cols-[4.25rem_1fr_auto] items-center gap-3 text-left"
+                        aria-pressed={toppingQuantities[topping.id] > 0}
+                        disabled={toppingQuantities[topping.id] === 0 && selectedToppingPortions >= toppingAllowance}
+                        onClick={() => toggleTopping(topping.id)}
+                      >
                       <div className="topping-media">
                         <Image src={topping.image} alt="" fill sizes="4.25rem" className="catalog-image object-contain" />
                       </div>
                       <div className="min-w-0">
                         <h5 className="text-sm font-bold leading-tight">{topping.name}</h5>
                         <p className="mt-1 text-xs leading-snug text-white/50">{topping.description}</p>
-                        <div className="mt-2">
+                      </div>
+                      <span className="choice-state">{toppingQuantities[topping.id] > 0 ? "Elegido" : "Elegir"}</span>
+                      </button>
+                      {toppingQuantities[topping.id] > 0 && (
+                        <div className="choice-quantity-row mt-2">
+                          <span>Porciones de este topping</span>
                           <QuantityControl
                             value={toppingQuantities[topping.id]}
                             label={topping.name}
@@ -243,7 +282,7 @@ export default function OrderBuilder() {
                             })}
                           />
                         </div>
-                      </div>
+                      )}
                     </article>
                   ))}
                 </div>
@@ -290,13 +329,14 @@ export default function OrderBuilder() {
               </div>
             </div>
 
-            <div data-funnel-event="04_beverages_view" className="order-card text-center">
+          <div data-funnel-event="04_beverages_view" className="order-card text-center">
               <span className="eyebrow">Paso 03 · Bebidas</span>
               <h3 className="mt-2 text-2xl font-bold">Algo frío para la mesa</h3>
               <p className="mx-auto mt-1 max-w-lg text-sm text-white/58">Agrega tu bebida sin mezclarla con los acompañamientos o toppings.</p>
               <div className="mt-4 space-y-2">
                 {offer.beverages.map((beverage) => (
-                  <div key={beverage.id} className="addon-row grid gap-3 rounded-[1.25rem] p-2.5 text-left sm:grid-cols-[4.75rem_1fr_auto] sm:items-center">
+                  <div key={beverage.id} className={`beverage-choice rounded-[1.25rem] p-2.5 text-left ${beverageQuantities[beverage.id] > 0 ? "is-selected" : ""}`}>
+                    <button type="button" className="choice-button grid w-full grid-cols-[4.75rem_1fr_auto] items-center gap-3 text-left" aria-pressed={beverageQuantities[beverage.id] > 0} onClick={() => toggleBeverage(beverage.id)}>
                     <div className="addon-media">
                       {beverage.image ? (
                         <Image src={beverage.image} alt="" fill sizes="5rem" className="catalog-image object-contain" />
@@ -311,24 +351,30 @@ export default function OrderBuilder() {
                       </div>
                       <p className="mt-1 text-sm text-white/58">{beverage.description}</p>
                     </div>
-                    <QuantityControl
-                      value={beverageQuantities[beverage.id]}
-                      label={beverage.name}
-                      onChange={(value) => {
-                        const nextQuantity = Math.min(9, value);
-                        if (nextQuantity > beverageQuantities[beverage.id]) {
-                          trackFunnelEvent("beverage_added", { item: beverage.id, quantity: nextQuantity });
-                        }
-                        setBeverageQuantities((current) => ({ ...current, [beverage.id]: nextQuantity }));
-                      }}
-                    />
+                    <span className="choice-state">{beverageQuantities[beverage.id] > 0 ? "Agregada" : "Agregar"}</span>
+                    </button>
+                    {beverageQuantities[beverage.id] > 0 && (
+                      <div className="choice-quantity-row mt-2">
+                        <span>¿Quieres más de una?</span>
+                        <QuantityControl
+                          value={beverageQuantities[beverage.id]}
+                          label={beverage.name}
+                          onChange={(value) => {
+                            const nextQuantity = Math.min(9, value);
+                            if (nextQuantity > beverageQuantities[beverage.id]) {
+                              trackFunnelEvent("beverage_added", { item: beverage.id, quantity: nextQuantity });
+                            }
+                            setBeverageQuantities((current) => ({ ...current, [beverage.id]: nextQuantity }));
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
-          </div>
 
-          <aside id="resumen-pedido" data-funnel-event="05_summary_view" className="summary-card scroll-mt-24 lg:sticky lg:top-28" aria-labelledby="summary-title">
+          <aside id="resumen-pedido" data-funnel-event="05_summary_view" className="summary-card scroll-mt-24" aria-labelledby="summary-title">
             <div className="flex items-start justify-between gap-4">
               <div><span className="eyebrow">Paso 04</span><h3 id="summary-title" className="mt-2 text-2xl font-bold">Tu reserva</h3></div>
               <span className="rounded-full bg-[var(--porkilo-orange)]/15 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--porkilo-orange-light)]">{offer.dispatch}</span>
@@ -352,6 +398,7 @@ export default function OrderBuilder() {
                 </div>
               ))}
               <div className="flex justify-between gap-4 text-[var(--porkilo-orange-light)]"><span>Papas, ají, maduro y arepitas</span><strong>Incluidos</strong></div>
+              <div className="flex justify-between gap-4 text-[var(--porkilo-orange-light)]"><span>Domicilio</span><strong>Gratis</strong></div>
               <div className="flex justify-between gap-4 text-[var(--porkilo-orange-light)]"><span>{selectedToppingPortions}/{toppingAllowance} toppings</span><strong>{toppingsComplete ? "Listos" : "Por completar"}</strong></div>
               {selectedToppings.map((topping) => (
                 <div key={topping.id} className="flex justify-between gap-4 text-[var(--porkilo-muted)]">
@@ -365,9 +412,11 @@ export default function OrderBuilder() {
               <strong className="text-3xl font-black tracking-[-0.04em]">{formatMoney(total)}</strong>
             </div>
 
-            <a href={whatsappUrl} target="_blank" rel="noreferrer" onClick={handleOrderClick} aria-disabled={!toppingsComplete} className={`whatsapp-button mt-5 ${toppingsComplete ? "" : "is-disabled"}`}>{toppingsComplete ? "Pedir por WhatsApp" : "Completa tus toppings"} <span aria-hidden="true">↗</span></a>
             <p className="mt-3 text-center text-[11px] leading-relaxed text-white/40">El pedido se confirma en WhatsApp según disponibilidad y zona de entrega.</p>
+            <a href={whatsappUrl} target="_blank" rel="noreferrer" onClick={handleOrderClick} aria-disabled={!toppingsComplete} className={`whatsapp-button mt-4 ${toppingsComplete ? "" : "is-disabled"}`}>{toppingsComplete ? "Pedir por WhatsApp" : "Completa tus toppings"} <span aria-hidden="true">↗</span></a>
           </aside>
+
+          <Countdown />
         </div>
       </div>
     </section>
