@@ -133,6 +133,12 @@ export default function OrderBuilder() {
     });
   };
 
+  const handleContinueClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (toppingsComplete) return;
+    event.preventDefault();
+    document.getElementById("toppings-incluidos")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
   return (
     <section id="arma-tu-pedido" className="relative px-4 py-7 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-7xl">
@@ -211,8 +217,8 @@ export default function OrderBuilder() {
               </div>
             </div>
 
-            <a href={whatsappUrl} target="_blank" rel="noreferrer" onClick={handleOrderClick} aria-disabled={!toppingsComplete} className={`whatsapp-button lg:hidden ${toppingsComplete ? "" : "is-disabled"}`}>
-              {toppingsComplete ? `Pedir ${formatKilos(kilos)} kg por WhatsApp` : `Elige tus ${toppingAllowance} toppings`} <span aria-hidden="true">↗</span>
+            <a href="#resumen-pedido" onClick={handleContinueClick} aria-disabled={!toppingsComplete} className={`whatsapp-button lg:hidden ${toppingsComplete ? "" : "is-disabled"}`}>
+              {toppingsComplete ? "Revisar pedido antes de enviar" : `Elige tus ${toppingAllowance} toppings`} <span aria-hidden="true">↓</span>
             </a>
 
             <div className="order-card text-center">
@@ -277,7 +283,7 @@ export default function OrderBuilder() {
             </div>
           </div>
 
-          <aside className="summary-card lg:sticky lg:top-28" aria-labelledby="summary-title">
+          <aside id="resumen-pedido" className="summary-card scroll-mt-24 lg:sticky lg:top-28" aria-labelledby="summary-title">
             <div className="flex items-start justify-between gap-4">
               <div><span className="eyebrow">Paso 04</span><h3 id="summary-title" className="mt-2 text-2xl font-bold">Tu reserva</h3></div>
               <span className="rounded-full bg-[var(--porkilo-orange)]/15 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--porkilo-orange-light)]">{offer.dispatch}</span>
