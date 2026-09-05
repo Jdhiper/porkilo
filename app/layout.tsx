@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import MetaPixel from "@/components/MetaPixel";
 import "./globals.css";
 
@@ -38,6 +39,7 @@ export default function RootLayout({
       <body className={inter.variable}>
         {children}
         <MetaPixel />
+        <Analytics />
       </body>
     </html>
   );
