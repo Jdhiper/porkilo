@@ -2,7 +2,7 @@
 
 import { META_PIXEL_ID } from "@/lib/meta-config";
 
-export type MetaEventName = "PageView" | "InitiateCheckout";
+export type MetaEventName = "PageView" | "ViewContent" | "InitiateCheckout";
 
 export type MetaCustomData = Record<string, string | number | boolean>;
 

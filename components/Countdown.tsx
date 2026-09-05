@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { offer } from "@/data/offer";
+import { trackFunnelEvent } from "@/lib/funnel-analytics";
 
 type TimeLeft = {
   days: number;
@@ -86,7 +87,10 @@ export default function Countdown() {
             <button
               type="button"
               className="bonus-order-button"
-              onClick={() => document.getElementById("arma-tu-pedido")?.scrollIntoView({ behavior: "smooth" })}
+              onClick={() => {
+                trackFunnelEvent("cta_offer_click");
+                document.getElementById("arma-tu-pedido")?.scrollIntoView({ behavior: "smooth" });
+              }}
             >
               Armar mi pedido <span aria-hidden="true">↓</span>
             </button>

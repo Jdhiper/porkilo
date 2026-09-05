@@ -4,7 +4,7 @@ import { META_PIXEL_ID } from "@/lib/meta-config";
 export const runtime = "nodejs";
 
 const META_API_VERSION = "v26.0";
-const ALLOWED_EVENTS = new Set(["PageView", "InitiateCheckout"]);
+const ALLOWED_EVENTS = new Set(["PageView", "ViewContent", "InitiateCheckout"]);
 
 type EventRequest = {
   eventName?: unknown;
@@ -41,8 +41,12 @@ export async function POST(request: Request) {
   const pixelId = META_PIXEL_ID;
   const accessToken = process.env.META_CONVERSIONS_API_TOKEN;
 
-  if (!pixelId || !/^\d+$/.test(pixelId) || !accessToken) {
-    return NextResponse.json({ error: "Meta no está configurado." }, { status: 503 });
+  if (!pixelId || !/^\d+$/.test(pixelId)) {
+    return NextResponse.json({ error: "El píxel de Meta no es válido." }, { status: 503 });
+  }
+
+  if (!accessToken || accessToken === "replace_with_your_token") {
+    return new NextResponse(null, { status: 204 });
   }
 
   const body = await request.json().catch(() => null) as EventRequest | null;
@@ -99,17 +103,33 @@ export async function POST(request: Request) {
     payload.test_event_code = process.env.META_TEST_EVENT_CODE;
   }
 
-  const metaResponse = await fetch(
-    `https://graph.facebook.com/${META_API_VERSION}/${pixelId}/events?access_token=${encodeURIComponent(accessToken)}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-    },
-  );
+  let metaResponse: Response;
+
+  try {
+    metaResponse = await fetch(
+      `https://graph.facebook.com/${META_API_VERSION}/${pixelId}/events?access_token=${encodeURIComponent(accessToken)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        cache: "no-store",
+      },
+    );
+  } catch {
+    console.error("[Meta CAPI] No fue posible conectar con Meta.");
+    return NextResponse.json({ error: "No fue posible conectar con Meta." }, { status: 502 });
+  }
 
   if (!metaResponse.ok) {
+    const responseBody = await metaResponse.json().catch(() => null) as {
+      error?: { code?: number; type?: string; message?: string };
+    } | null;
+    console.error("[Meta CAPI] Evento rechazado.", {
+      status: metaResponse.status,
+      code: responseBody?.error?.code,
+      type: responseBody?.error?.type,
+      message: responseBody?.error?.message,
+    });
     return NextResponse.json({ error: "Meta rechazó el evento." }, { status: 502 });
   }
 

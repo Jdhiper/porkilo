@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { formatMoney, offer } from "@/data/offer";
+import { trackFunnelEvent } from "@/lib/funnel-analytics";
 
 export default function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -81,7 +82,7 @@ export default function Hero() {
               <p className="mt-2 text-xs font-semibold leading-relaxed text-white/75">Papas cocinadas, ají, maduro, arepitas + 2 toppings a elección</p>
               <span className="stock-pill">Solo {offer.stockKg} disponibles</span>
             </div>
-            <a className="cta-primary min-w-44" href="#arma-tu-pedido">Pedir ahora <span aria-hidden="true">↓</span></a>
+            <a className="cta-primary min-w-44" href="#arma-tu-pedido" onClick={() => trackFunnelEvent("cta_hero_click")}>Pedir ahora <span aria-hidden="true">↓</span></a>
           </div>
         </div>
       </div>

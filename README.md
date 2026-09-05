@@ -38,6 +38,13 @@ Configura estas variables en Vercel, dentro de **Project Settings → Environmen
 
 Para trabajar localmente, copia `.env.example` como `.env.local` y reemplaza los valores de ejemplo. Después de modificar variables en Vercel es necesario crear un nuevo despliegue.
 
+## Embudo de conversión y comportamiento
+
+La web registra estos hitos anónimos: llegada al configurador, visualización de toppings, extras, bebidas y resumen, clics en las llamadas a la acción, cambios de cantidad, adicionales agregados y apertura de WhatsApp.
+
+- En Vercel Pro aparecen en **Analytics → Events**. Vercel Hobby conserva las visitas generales, pero no incluye eventos personalizados.
+- Para grabaciones de sesiones, mapas de calor y embudos visuales, crea un proyecto en Microsoft Clarity y configura su identificador como `NEXT_PUBLIC_CLARITY_PROJECT_ID` en Vercel. No se envían nombres, teléfonos ni el contenido del mensaje de WhatsApp.
+
 ## Alcance del MVP
 
 Incluye experiencia visual, contador de preventa, escasez, oferta, bonificaciones, configurador, cálculo del total y generación del pedido para WhatsApp. No incluye pagos, usuarios, base de datos, CRM ni inventario en tiempo real.

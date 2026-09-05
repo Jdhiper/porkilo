@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatMoney, offer } from "@/data/offer";
+import { trackFunnelEvent, trackFunnelEventOnce } from "@/lib/funnel-analytics";
 import { trackMetaEvent } from "@/lib/meta";
 
 type AddonQuantities = Record<(typeof offer.addons)[number]["id"], number>;
@@ -55,8 +56,34 @@ export default function OrderBuilder() {
     [addonQuantities, beverageQuantities, discount, productSubtotal, selectedAddons, selectedBeverages],
   );
 
+  useEffect(() => {
+    const sections = document.querySelectorAll<HTMLElement>("[data-funnel-event]");
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const eventName = (entry.target as HTMLElement).dataset.funnelEvent;
+        if (eventName) {
+          trackFunnelEventOnce(eventName);
+          if (eventName === "01_builder_view") {
+            trackMetaEvent("ViewContent", {
+              currency: "COP",
+              value: offer.product.price,
+              content_name: offer.product.name,
+              content_type: "product",
+            });
+          }
+        }
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: 0.08 });
+
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
+
   const changeKilos = (nextValue: number) => {
     const nextKilos = Math.max(0.5, Math.min(5, Math.round(nextValue * 2) / 2));
+    if (nextKilos !== kilos) trackFunnelEvent("quantity_change", { kilos: nextKilos });
     const nextAllowance = Math.max(2, Math.round(nextKilos * 2));
     setKilos(nextKilos);
     setToppingQuantities((current) => {
@@ -120,10 +147,12 @@ export default function OrderBuilder() {
   const handleOrderClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (!toppingsComplete) {
       event.preventDefault();
+      trackFunnelEvent("order_blocked_toppings");
       document.getElementById("toppings-incluidos")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
+    trackFunnelEvent("06_whatsapp_click", { kilos, total });
     trackMetaEvent("InitiateCheckout", {
       currency: "COP",
       value: total,
@@ -134,13 +163,17 @@ export default function OrderBuilder() {
   };
 
   const handleContinueClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    if (toppingsComplete) return;
+    if (toppingsComplete) {
+      trackFunnelEvent("review_order_click", { kilos, total });
+      return;
+    }
     event.preventDefault();
+    trackFunnelEvent("order_blocked_toppings");
     document.getElementById("toppings-incluidos")?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
   return (
-    <section id="arma-tu-pedido" className="relative px-4 py-7 sm:px-6 sm:py-10">
+    <section id="arma-tu-pedido" data-funnel-event="01_builder_view" className="relative px-4 py-7 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-7xl">
         <div className="mx-auto max-w-3xl text-center">
           <p className="eyebrow">Tu pedido, a tu manera</p>
@@ -179,7 +212,7 @@ export default function OrderBuilder() {
                 </div>
               </div>
 
-              <div id="toppings-incluidos" className="mt-5 border-t border-white/10 pt-5">
+              <div id="toppings-incluidos" data-funnel-event="02_toppings_view" className="mt-5 border-t border-white/10 pt-5">
                 <div className="flex flex-col items-center justify-between gap-2 sm:flex-row sm:text-left">
                   <div>
                     <span className="eyebrow">Incluidos con tu pedido</span>
@@ -221,7 +254,7 @@ export default function OrderBuilder() {
               {toppingsComplete ? "Revisar pedido antes de enviar" : `Elige tus ${toppingAllowance} toppings`} <span aria-hidden="true">↓</span>
             </a>
 
-            <div className="order-card text-center">
+            <div data-funnel-event="03_extras_view" className="order-card text-center">
               <span className="eyebrow">Paso 02 · Opcional</span>
               <h3 className="mt-2 text-2xl font-bold">¿Quieres porciones extra?</h3>
               <div className="mt-4 space-y-2">
@@ -244,14 +277,20 @@ export default function OrderBuilder() {
                     <QuantityControl
                       value={addonQuantities[addon.id]}
                       label={addon.name}
-                      onChange={(value) => setAddonQuantities((current) => ({ ...current, [addon.id]: Math.min(9, value) }))}
+                      onChange={(value) => {
+                        const nextQuantity = Math.min(9, value);
+                        if (nextQuantity > addonQuantities[addon.id]) {
+                          trackFunnelEvent("extra_added", { item: addon.id, quantity: nextQuantity });
+                        }
+                        setAddonQuantities((current) => ({ ...current, [addon.id]: nextQuantity }));
+                      }}
                     />
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="order-card text-center">
+            <div data-funnel-event="04_beverages_view" className="order-card text-center">
               <span className="eyebrow">Paso 03 · Bebidas</span>
               <h3 className="mt-2 text-2xl font-bold">Algo frío para la mesa</h3>
               <p className="mx-auto mt-1 max-w-lg text-sm text-white/58">Agrega tu bebida sin mezclarla con los acompañamientos o toppings.</p>
@@ -275,7 +314,13 @@ export default function OrderBuilder() {
                     <QuantityControl
                       value={beverageQuantities[beverage.id]}
                       label={beverage.name}
-                      onChange={(value) => setBeverageQuantities((current) => ({ ...current, [beverage.id]: Math.min(9, value) }))}
+                      onChange={(value) => {
+                        const nextQuantity = Math.min(9, value);
+                        if (nextQuantity > beverageQuantities[beverage.id]) {
+                          trackFunnelEvent("beverage_added", { item: beverage.id, quantity: nextQuantity });
+                        }
+                        setBeverageQuantities((current) => ({ ...current, [beverage.id]: nextQuantity }));
+                      }}
                     />
                   </div>
                 ))}
@@ -283,7 +328,7 @@ export default function OrderBuilder() {
             </div>
           </div>
 
-          <aside id="resumen-pedido" className="summary-card scroll-mt-24 lg:sticky lg:top-28" aria-labelledby="summary-title">
+          <aside id="resumen-pedido" data-funnel-event="05_summary_view" className="summary-card scroll-mt-24 lg:sticky lg:top-28" aria-labelledby="summary-title">
             <div className="flex items-start justify-between gap-4">
               <div><span className="eyebrow">Paso 04</span><h3 id="summary-title" className="mt-2 text-2xl font-bold">Tu reserva</h3></div>
               <span className="rounded-full bg-[var(--porkilo-orange)]/15 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--porkilo-orange-light)]">{offer.dispatch}</span>

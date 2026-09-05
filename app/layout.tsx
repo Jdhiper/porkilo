@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import Clarity from "@/components/Clarity";
 import MetaPixel from "@/components/MetaPixel";
 import "./globals.css";
 
@@ -40,6 +41,7 @@ export default function RootLayout({
       <body className={inter.variable}>
         {children}
         <MetaPixel />
+        <Clarity />
         <Analytics />
         <SpeedInsights />
       </body>
