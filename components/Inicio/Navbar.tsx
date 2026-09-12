@@ -8,7 +8,7 @@ export default function Navbar() {
           <Image src="/brand/porkilo-alternativo.png" alt="Porkilo" width={1424} height={750} className="h-10 w-auto object-contain sm:h-11" priority />
         </a>
         <a href="#arma-tu-pedido" className="rounded-full bg-[var(--porkilo-orange)] px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.12em] text-white transition hover:bg-[var(--porkilo-orange-light)] sm:px-5 sm:text-xs">
-          Armar pedido
+          Pedir desde $49K
         </a>
       </nav>
     </header>

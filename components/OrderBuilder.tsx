@@ -12,7 +12,9 @@ type BeverageQuantities = Record<(typeof offer.beverages)[number]["id"], number>
 type ToppingQuantities = Record<(typeof offer.toppings)[number]["id"], number>;
 const emptyAddons = Object.fromEntries(offer.addons.map((addon) => [addon.id, 0])) as AddonQuantities;
 const emptyBeverages = Object.fromEntries(offer.beverages.map((beverage) => [beverage.id, 0])) as BeverageQuantities;
-const emptyToppings = Object.fromEntries(offer.toppings.map((topping) => [topping.id, 0])) as ToppingQuantities;
+const initialToppings = Object.fromEntries(
+  offer.toppings.map((topping, index) => [topping.id, index < 2 ? 1 : 0]),
+) as ToppingQuantities;
 
 function formatKilos(value: number) {
   return value.toLocaleString("es-CO", { maximumFractionDigits: 1 });
@@ -36,15 +38,19 @@ function QuantityControl({ value, onChange, label, disableAdd = false }: { value
 
 export default function OrderBuilder() {
   const [kilos, setKilos] = useState(0.5);
-  const [toppingQuantities, setToppingQuantities] = useState<ToppingQuantities>(emptyToppings);
+  const [toppingQuantities, setToppingQuantities] = useState<ToppingQuantities>(initialToppings);
   const [addonQuantities, setAddonQuantities] = useState<AddonQuantities>(emptyAddons);
   const [beverageQuantities, setBeverageQuantities] = useState<BeverageQuantities>(emptyBeverages);
+  const [extrasOpen, setExtrasOpen] = useState(false);
+  const [beveragesOpen, setBeveragesOpen] = useState(false);
   const toppingAllowance = Math.max(2, Math.round(kilos * 2));
   const selectedToppingPortions = Object.values(toppingQuantities).reduce((sum, quantity) => sum + quantity, 0);
   const toppingsComplete = selectedToppingPortions === toppingAllowance;
   const selectedToppings = offer.toppings.filter((topping) => toppingQuantities[topping.id] > 0);
   const selectedAddons = useMemo(() => offer.addons.filter((addon) => addonQuantities[addon.id] > 0), [addonQuantities]);
   const selectedBeverages = useMemo(() => offer.beverages.filter((beverage) => beverageQuantities[beverage.id] > 0), [beverageQuantities]);
+  const selectedAddonUnits = Object.values(addonQuantities).reduce((sum, quantity) => sum + quantity, 0);
+  const selectedBeverageUnits = Object.values(beverageQuantities).reduce((sum, quantity) => sum + quantity, 0);
   const productSubtotal = getProductSubtotal(kilos);
   const discount = kilos >= offer.bulkDiscount.minimumKg ? Math.round(productSubtotal * offer.bulkDiscount.rate) : 0;
   const total = useMemo(
@@ -63,13 +69,16 @@ export default function OrderBuilder() {
         const eventName = (entry.target as HTMLElement).dataset.funnelEvent;
         if (eventName) {
           trackFunnelEventOnce(eventName);
-          if (eventName === "01_builder_view") {
+          if (eventName === "v2_01_builder_view") {
+            trackFunnelEventOnce("01_builder_view");
             trackMetaEvent("ViewContent", {
               currency: "COP",
-              value: offer.product.price,
+              value: offer.product.halfKgPrice,
               content_name: offer.product.name,
               content_type: "product",
             });
+          } else if (eventName === "v2_03_summary_view") {
+            trackFunnelEventOnce("05_summary_view");
           }
         }
         observer.unobserve(entry.target);
@@ -159,6 +168,7 @@ export default function OrderBuilder() {
       return;
     }
 
+    trackFunnelEvent("v2_04_whatsapp_click", { kilos, total });
     trackFunnelEvent("06_whatsapp_click", { kilos, total });
     trackMetaEvent("InitiateCheckout", {
       currency: "COP",
@@ -171,6 +181,7 @@ export default function OrderBuilder() {
 
   const handleContinueClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (toppingsComplete) {
+      trackFunnelEvent("v2_02_review_order", { kilos, total });
       trackFunnelEvent("review_order_click", { kilos, total });
       return;
     }
@@ -180,36 +191,24 @@ export default function OrderBuilder() {
   };
 
   return (
-    <section id="arma-tu-pedido" data-funnel-event="01_builder_view" className="relative px-4 py-7 sm:px-6 sm:py-10">
+    <section id="arma-tu-pedido" data-funnel-event="v2_01_builder_view" className="relative scroll-mt-20 px-4 py-4 sm:px-6 sm:py-8">
       <div className="mx-auto max-w-7xl">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="eyebrow">Tu pedido, a tu manera</p>
-          <h2 className="mt-2 text-[clamp(2.45rem,6vw,4.5rem)] font-black leading-[0.9] tracking-[-0.06em]">Arma tu Porkilo.</h2>
-          <p className="mx-auto mt-2 max-w-2xl text-sm text-white/65 sm:text-base">Medio kilo o un kilo incluyen papas cocinadas, ají, plátano maduro, arepitas blancas y 2 toppings. Cada medio kilo adicional suma otra porción de topping.</p>
+          <p className="eyebrow">Elige y pide</p>
+          <h2 className="mt-1 text-[clamp(2.25rem,6vw,4rem)] font-black leading-[0.9] tracking-[-0.06em]">Arma tu Porkilo.</h2>
+          <p className="mx-auto mt-2 max-w-2xl text-sm text-white/65">½ kilo y 1 kilo ya llegan completos. Solo elige tamaño y toppings.</p>
         </div>
 
-        <div className="bulk-offer mx-auto mt-5 flex max-w-3xl flex-col items-center justify-center gap-4 rounded-[1.6rem] px-5 py-4 text-center sm:flex-row">
-          <div className="discount-brand-mark" aria-hidden="true">
-            <Image src="/brand/porkilo-icon.png" alt="" fill sizes="6rem" className="object-contain" />
-            <span>8%</span>
-          </div>
-          <div>
-            <p className="eyebrow">3 kilos · Más mesa · Menos precio</p>
-            <h3 className="mt-1 text-xl font-black sm:text-2xl">Lleva 3 kilos y recibe 8% OFF.</h3>
-            <p className="mt-1 text-xs text-white/55">Lo aplicamos automáticamente. Tú solo invita a la gente.</p>
-          </div>
-        </div>
-
-        <div className="mx-auto mt-6 max-w-4xl space-y-3">
+        <div className="mx-auto mt-4 max-w-4xl space-y-3">
             <div className="order-card text-center">
-              <div className="grid gap-4 sm:grid-cols-[9.5rem_1fr] sm:items-center">
+              <div className="product-intro grid gap-4 sm:grid-cols-[9.5rem_1fr] sm:items-center">
                 <div className="product-order-media">
                   <Image src={offer.product.image} alt="Presentación completa de Porkilo con panceta y acompañamientos" fill sizes="(max-width: 639px) 18rem, 9.5rem" className="object-cover" />
                 </div>
                 <div className="min-w-0">
-                  <span className="eyebrow">Paso 01</span>
+                  <span className="eyebrow">Primero</span>
                   <h3 className="mt-2 text-2xl font-bold">¿Cuánta panceta?</h3>
-                  <p className="mt-1 text-sm text-white/60">Desde ½ kilo por {formatMoney(offer.product.halfKgPrice)}. Llega con todos los acompañamientos listo para servir.</p>
+                  <p className="mt-1 text-sm text-white/60">Desde {formatMoney(offer.product.halfKgPrice)}, completa y lista para servir.</p>
                 </div>
               </div>
 
@@ -221,7 +220,7 @@ export default function OrderBuilder() {
                   <span>Para compartir</span><strong>1 kilo</strong><small>{formatMoney(offer.product.price)}</small>
                 </button>
                 <button type="button" className={`product-size-button ${kilos > 1 ? "is-selected" : ""}`} aria-pressed={kilos > 1} onClick={() => changeKilos(kilos > 1 ? kilos : 1.5)}>
-                  <span>Mesa grande</span><strong>Más de 1 kilo</strong><small>Desde 1,5 kg</small>
+                  <span>Mesa grande</span><strong>Más de 1 kilo</strong><small>3 kg tienen 8% OFF</small>
                 </button>
               </div>
 
@@ -239,17 +238,17 @@ export default function OrderBuilder() {
                 </div>
               )}
 
-              <div id="toppings-incluidos" data-funnel-event="02_toppings_view" className="mt-5 border-t border-white/10 pt-5">
+              <div id="toppings-incluidos" className="mt-4 border-t border-white/10 pt-4">
                 <div className="flex flex-col items-center justify-between gap-2 sm:flex-row sm:text-left">
                   <div>
                     <span className="eyebrow">Incluidos con tu pedido</span>
                     <h4 className="mt-1 text-xl font-black">Elige tus toppings</h4>
-                    <p className="mt-1 text-sm text-white/55">Puedes combinar sabores o repetir tu favorito.</p>
+                    <p className="mt-1 text-sm text-white/55">Dejamos dos favoritos listos. Tócalos si quieres cambiarlos.</p>
                   </div>
                   <span className={`topping-counter ${toppingsComplete ? "is-complete" : ""}`}>{selectedToppingPortions} de {toppingAllowance} porciones</span>
                 </div>
 
-                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <div className="topping-grid mt-4 grid gap-2 sm:grid-cols-2">
                   {offer.toppings.map((topping) => (
                     <article key={topping.id} className={`topping-card rounded-[1.2rem] p-2.5 text-left ${toppingQuantities[topping.id] > 0 ? "is-selected" : ""}`}>
                       <button
@@ -264,11 +263,11 @@ export default function OrderBuilder() {
                       </div>
                       <div className="min-w-0">
                         <h5 className="text-sm font-bold leading-tight">{topping.name}</h5>
-                        <p className="mt-1 text-xs leading-snug text-white/50">{topping.description}</p>
+                        <p className="choice-description mt-1 text-xs leading-snug text-white/50">{topping.description}</p>
                       </div>
                       <span className="choice-state">{toppingQuantities[topping.id] > 0 ? "Elegido" : "Elegir"}</span>
                       </button>
-                      {toppingQuantities[topping.id] > 0 && (
+                      {toppingQuantities[topping.id] > 0 && (selectedToppingPortions < toppingAllowance || toppingQuantities[topping.id] > 1) && (
                         <div className="choice-quantity-row mt-2">
                           <span>Porciones de este topping</span>
                           <QuantityControl
@@ -293,127 +292,160 @@ export default function OrderBuilder() {
               {toppingsComplete ? "Revisar pedido antes de enviar" : `Elige tus ${toppingAllowance} toppings`} <span aria-hidden="true">↓</span>
             </a>
 
-            <div data-funnel-event="03_extras_view" className="order-card text-center">
-              <span className="eyebrow">Paso 02 · Opcional</span>
-              <h3 className="mt-2 text-2xl font-bold">¿Quieres porciones extra?</h3>
-              <div className="mt-4 space-y-2">
-                {offer.addons.map((addon) => (
-                  <div key={addon.id} className="addon-row grid gap-3 rounded-[1.25rem] p-2.5 text-left sm:grid-cols-[4.75rem_1fr_auto] sm:items-center">
-                    <div className="addon-media">
-                      {addon.image ? (
-                        <Image src={addon.image} alt="" fill sizes="5rem" className="catalog-image object-contain" />
-                      ) : (
-                        <span aria-hidden="true">+</span>
+            <section className="order-card optional-section" aria-labelledby="extras-title">
+              <button
+                type="button"
+                className="optional-disclosure-trigger"
+                aria-expanded={extrasOpen}
+                aria-controls="extras-content"
+                onClick={() => {
+                  const nextOpen = !extrasOpen;
+                  setExtrasOpen(nextOpen);
+                  if (nextOpen) {
+                    trackFunnelEvent("v2_extras_opened");
+                    trackFunnelEvent("extras_opened");
+                  }
+                }}
+              >
+                <span className="optional-disclosure-copy">
+                  <span className="eyebrow">Opcional</span>
+                  <strong id="extras-title">¿Quieres agregar extras?</strong>
+                  <small>{selectedAddonUnits ? `${selectedAddonUnits} seleccionados` : "Solo si te provocan · desde $5.000"}</small>
+                </span>
+                <span className="optional-disclosure-action">{extrasOpen ? "Cerrar" : "Ver extras"} <span aria-hidden="true">{extrasOpen ? "−" : "+"}</span></span>
+              </button>
+
+              {extrasOpen && (
+                <div id="extras-content" className="optional-content mt-4 space-y-2">
+                  {offer.addons.map((addon) => (
+                    <div key={addon.id} className="addon-row grid gap-3 rounded-[1.25rem] p-2.5 text-left sm:grid-cols-[4.75rem_1fr_auto] sm:items-center">
+                      <div className="addon-media">
+                        {addon.image ? <Image src={addon.image} alt="" fill sizes="5rem" className="catalog-image object-contain" /> : <span aria-hidden="true">+</span>}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                          <h4 className="font-bold">{addon.name}</h4>
+                          <span className="text-sm font-semibold text-[var(--porkilo-orange-light)]">+ {formatMoney(addon.price)}</span>
+                        </div>
+                        <p className="optional-description mt-1 text-sm text-white/58">{addon.description}</p>
+                      </div>
+                      <QuantityControl
+                        value={addonQuantities[addon.id]}
+                        label={addon.name}
+                        onChange={(value) => {
+                          const nextQuantity = Math.min(9, value);
+                          if (nextQuantity > addonQuantities[addon.id]) trackFunnelEvent("extra_added", { item: addon.id, quantity: nextQuantity });
+                          setAddonQuantities((current) => ({ ...current, [addon.id]: nextQuantity }));
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="order-card optional-section" aria-labelledby="beverages-title">
+              <button
+                type="button"
+                className="optional-disclosure-trigger"
+                aria-expanded={beveragesOpen}
+                aria-controls="beverages-content"
+                onClick={() => {
+                  const nextOpen = !beveragesOpen;
+                  setBeveragesOpen(nextOpen);
+                  if (nextOpen) {
+                    trackFunnelEvent("v2_beverages_opened");
+                    trackFunnelEvent("beverages_opened");
+                  }
+                }}
+              >
+                <span className="optional-disclosure-copy">
+                  <span className="eyebrow">Opcional</span>
+                  <strong id="beverages-title">¿Agregamos Coca-Cola?</strong>
+                  <small>{selectedBeverageUnits ? `${selectedBeverageUnits} seleccionadas` : "1,5 L o 3 L"}</small>
+                </span>
+                <span className="optional-disclosure-action">{beveragesOpen ? "Cerrar" : "Ver bebidas"} <span aria-hidden="true">{beveragesOpen ? "−" : "+"}</span></span>
+              </button>
+
+              {beveragesOpen && (
+                <div id="beverages-content" className="optional-content mt-4 space-y-2">
+                  {offer.beverages.map((beverage) => (
+                    <div key={beverage.id} className={`beverage-choice rounded-[1.25rem] p-2.5 text-left ${beverageQuantities[beverage.id] > 0 ? "is-selected" : ""}`}>
+                      <button type="button" className="choice-button grid w-full grid-cols-[4.75rem_1fr_auto] items-center gap-3 text-left" aria-pressed={beverageQuantities[beverage.id] > 0} onClick={() => toggleBeverage(beverage.id)}>
+                        <div className="addon-media">
+                          {beverage.image ? <Image src={beverage.image} alt="" fill sizes="5rem" className="catalog-image object-contain" /> : <span aria-hidden="true">+</span>}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                            <h4 className="font-bold">{beverage.name}</h4>
+                            <span className="text-sm font-semibold text-[var(--porkilo-orange-light)]">+ {formatMoney(beverage.price)}</span>
+                          </div>
+                          <p className="optional-description mt-1 text-sm text-white/58">{beverage.description}</p>
+                        </div>
+                        <span className="choice-state">{beverageQuantities[beverage.id] > 0 ? "Agregada" : "Agregar"}</span>
+                      </button>
+                      {beverageQuantities[beverage.id] > 0 && (
+                        <div className="choice-quantity-row mt-2">
+                          <span>¿Quieres más de una?</span>
+                          <QuantityControl
+                            value={beverageQuantities[beverage.id]}
+                            label={beverage.name}
+                            onChange={(value) => {
+                              const nextQuantity = Math.min(9, value);
+                              if (nextQuantity > beverageQuantities[beverage.id]) trackFunnelEvent("beverage_added", { item: beverage.id, quantity: nextQuantity });
+                              setBeverageQuantities((current) => ({ ...current, [beverage.id]: nextQuantity }));
+                            }}
+                          />
+                        </div>
                       )}
                     </div>
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                        <h4 className="font-bold">{addon.name}</h4>
-                        <span className="text-sm font-semibold text-[var(--porkilo-orange-light)]">+ {formatMoney(addon.price)}</span>
-                      </div>
-                      <p className="mt-1 text-sm text-white/58">{addon.description}</p>
-                    </div>
-                    <QuantityControl
-                      value={addonQuantities[addon.id]}
-                      label={addon.name}
-                      onChange={(value) => {
-                        const nextQuantity = Math.min(9, value);
-                        if (nextQuantity > addonQuantities[addon.id]) {
-                          trackFunnelEvent("extra_added", { item: addon.id, quantity: nextQuantity });
-                        }
-                        setAddonQuantities((current) => ({ ...current, [addon.id]: nextQuantity }));
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
+                  ))}
+                </div>
+              )}
+            </section>
 
-          <div data-funnel-event="04_beverages_view" className="order-card text-center">
-              <span className="eyebrow">Paso 03 · Bebidas</span>
-              <h3 className="mt-2 text-2xl font-bold">Algo frío para la mesa</h3>
-              <p className="mx-auto mt-1 max-w-lg text-sm text-white/58">Agrega tu bebida sin mezclarla con los acompañamientos o toppings.</p>
-              <div className="mt-4 space-y-2">
-                {offer.beverages.map((beverage) => (
-                  <div key={beverage.id} className={`beverage-choice rounded-[1.25rem] p-2.5 text-left ${beverageQuantities[beverage.id] > 0 ? "is-selected" : ""}`}>
-                    <button type="button" className="choice-button grid w-full grid-cols-[4.75rem_1fr_auto] items-center gap-3 text-left" aria-pressed={beverageQuantities[beverage.id] > 0} onClick={() => toggleBeverage(beverage.id)}>
-                    <div className="addon-media">
-                      {beverage.image ? (
-                        <Image src={beverage.image} alt="" fill sizes="5rem" className="catalog-image object-contain" />
-                      ) : (
-                        <span aria-hidden="true">+</span>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                        <h4 className="font-bold">{beverage.name}</h4>
-                        <span className="text-sm font-semibold text-[var(--porkilo-orange-light)]">+ {formatMoney(beverage.price)}</span>
-                      </div>
-                      <p className="mt-1 text-sm text-white/58">{beverage.description}</p>
-                    </div>
-                    <span className="choice-state">{beverageQuantities[beverage.id] > 0 ? "Agregada" : "Agregar"}</span>
-                    </button>
-                    {beverageQuantities[beverage.id] > 0 && (
-                      <div className="choice-quantity-row mt-2">
-                        <span>¿Quieres más de una?</span>
-                        <QuantityControl
-                          value={beverageQuantities[beverage.id]}
-                          label={beverage.name}
-                          onChange={(value) => {
-                            const nextQuantity = Math.min(9, value);
-                            if (nextQuantity > beverageQuantities[beverage.id]) {
-                              trackFunnelEvent("beverage_added", { item: beverage.id, quantity: nextQuantity });
-                            }
-                            setBeverageQuantities((current) => ({ ...current, [beverage.id]: nextQuantity }));
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-          <aside id="resumen-pedido" data-funnel-event="05_summary_view" className="summary-card scroll-mt-24" aria-labelledby="summary-title">
+          <aside id="resumen-pedido" data-funnel-event="v2_03_summary_view" className="summary-card scroll-mt-24" aria-labelledby="summary-title">
             <div className="flex items-start justify-between gap-4">
-              <div><span className="eyebrow">Paso 04</span><h3 id="summary-title" className="mt-2 text-2xl font-bold">Tu reserva</h3></div>
+              <div><span className="eyebrow">Listo para enviar</span><h3 id="summary-title" className="mt-1 text-2xl font-black">Tu pedido está listo</h3></div>
               <span className="rounded-full bg-[var(--porkilo-orange)]/15 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--porkilo-orange-light)]">{offer.dispatch}</span>
             </div>
 
-            <div className="mt-5 space-y-3 border-y border-white/10 py-4 text-sm">
-              <div className="flex justify-between gap-4"><span>{formatKilos(kilos)} kg de panceta</span><strong>{formatMoney(productSubtotal)}</strong></div>
+            <div className="summary-breakdown mt-4 space-y-2.5 border-y border-white/10 py-4 text-sm">
+              <div className="summary-line summary-line-main"><span>{formatKilos(kilos)} kg de panceta Porkilo</span><strong>{formatMoney(productSubtotal)}</strong></div>
               {discount > 0 && (
-                <div className="flex justify-between gap-4 text-[var(--porkilo-orange-light)]">
-                  <span>Descuento por 3 kilos · 8%</span><strong>− {formatMoney(discount)}</strong>
-                </div>
+                <div className="summary-line text-[var(--porkilo-orange-light)]"><span>Descuento por 3 kilos · 8%</span><strong>− {formatMoney(discount)}</strong></div>
               )}
-              {selectedAddons.map((addon) => (
-                <div key={addon.id} className="flex justify-between gap-4 text-[var(--porkilo-muted)]">
-                  <span>{addonQuantities[addon.id]} × {addon.name}</span><span>{formatMoney(addon.price * addonQuantities[addon.id])}</span>
-                </div>
-              ))}
-              {selectedBeverages.map((beverage) => (
-                <div key={beverage.id} className="flex justify-between gap-4 text-[var(--porkilo-muted)]">
-                  <span>{beverageQuantities[beverage.id]} × {beverage.name}</span><span>{formatMoney(beverage.price * beverageQuantities[beverage.id])}</span>
-                </div>
-              ))}
-              <div className="flex justify-between gap-4 text-[var(--porkilo-orange-light)]"><span>Papas, ají, maduro y arepitas</span><strong>Incluidos</strong></div>
-              <div className="flex justify-between gap-4 text-[var(--porkilo-orange-light)]"><span>Domicilio</span><strong>Gratis</strong></div>
-              <div className="flex justify-between gap-4 text-[var(--porkilo-orange-light)]"><span>{selectedToppingPortions}/{toppingAllowance} toppings</span><strong>{toppingsComplete ? "Listos" : "Por completar"}</strong></div>
+              <div className="summary-included-title">También recibes incluido:</div>
+              <div className="summary-line"><span>Papas cocinadas</span><strong>Incluidas</strong></div>
+              <div className="summary-line"><span>Ají en su recipiente</span><strong>Incluido</strong></div>
+              <div className="summary-line"><span>Plátano maduro</span><strong>Incluido</strong></div>
+              <div className="summary-line"><span>Arepitas blancas</span><strong>Incluidas</strong></div>
               {selectedToppings.map((topping) => (
-                <div key={topping.id} className="flex justify-between gap-4 text-[var(--porkilo-muted)]">
-                  <span>{toppingQuantities[topping.id]} × {topping.name}</span><span>Incluido</span>
+                <div key={topping.id} className="summary-line">
+                  <span>{toppingQuantities[topping.id]} × {topping.name}</span><strong>Incluido</strong>
                 </div>
               ))}
+              {selectedAddons.length > 0 && <div className="summary-included-title">Extras:</div>}
+              {selectedAddons.map((addon) => (
+                <div key={addon.id} className="summary-line">
+                  <span>{addonQuantities[addon.id]} × {addon.name}</span><strong>{formatMoney(addon.price * addonQuantities[addon.id])}</strong>
+                </div>
+              ))}
+              {selectedBeverages.length > 0 && <div className="summary-included-title">Bebidas:</div>}
+              {selectedBeverages.map((beverage) => (
+                <div key={beverage.id} className="summary-line">
+                  <span>{beverageQuantities[beverage.id]} × {beverage.name}</span><strong>{formatMoney(beverage.price * beverageQuantities[beverage.id])}</strong>
+                </div>
+              ))}
+              <div className="summary-line summary-delivery"><span>Domicilio</span><strong>Gratis</strong></div>
             </div>
 
-            <div className="mt-5 flex items-end justify-between gap-4">
-              <span className="text-xs uppercase tracking-[0.16em] text-white/45">Total estimado</span>
-              <strong className="text-3xl font-black tracking-[-0.04em]">{formatMoney(total)}</strong>
+            <div className="mt-4 flex items-end justify-between gap-4">
+              <span className="text-xs font-bold uppercase tracking-[0.14em] text-white/45">Total a pagar</span>
+              <strong className="text-3xl font-black tracking-[-0.05em]">{formatMoney(total)}</strong>
             </div>
-
-            <p className="mt-3 text-center text-[11px] leading-relaxed text-white/40">El pedido se confirma en WhatsApp según disponibilidad y zona de entrega.</p>
-            <a href={whatsappUrl} target="_blank" rel="noreferrer" onClick={handleOrderClick} aria-disabled={!toppingsComplete} className={`whatsapp-button mt-4 ${toppingsComplete ? "" : "is-disabled"}`}>{toppingsComplete ? "Pedir por WhatsApp" : "Completa tus toppings"} <span aria-hidden="true">↗</span></a>
+            <a href={whatsappUrl} target="_blank" rel="noreferrer" onClick={handleOrderClick} aria-disabled={!toppingsComplete} className={`whatsapp-button mt-4 ${toppingsComplete ? "" : "is-disabled"}`}>{toppingsComplete ? "Enviar pedido por WhatsApp" : "Completa tus toppings"} <span aria-hidden="true">↗</span></a>
+            <p className="mt-2 text-center text-[11px] leading-relaxed text-white/48">Confirmas disponibilidad y horario directamente por WhatsApp.</p>
           </aside>
 
           <Countdown />

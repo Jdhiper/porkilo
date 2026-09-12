@@ -13,20 +13,20 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
-  title: "Porkilo | Un kilo. Cero sobras.",
-  description: "Panceta premium de piel crujiente, cocinada en lotes limitados y despachada los sábados. Arma tu pedido y reserva por WhatsApp.",
+  title: "Porkilo | Panceta completa a domicilio en Pasto",
+  description: "Panceta crujiente desde medio kilo, con acompañamientos, toppings y domicilio gratis. Preventa semanal con despacho los domingos en Pasto.",
   keywords: ["panceta", "porkilo", "panceta premium", "comida a domicilio", "preventa"],
   openGraph: {
-    title: "Porkilo | Un kilo. Cero sobras.",
-    description: "Panceta premium por kilos. Cupos semanales limitados.",
+    title: "Porkilo | Panceta completa a domicilio en Pasto",
+    description: "Panceta crujiente desde $49.000, con acompañamientos, toppings y domicilio gratis. Cupos semanales limitados.",
     type: "website",
     locale: "es_CO",
     images: [{ url: "/og.png", width: 1731, height: 909, alt: "Porkilo — Un kilo. Cero sobras." }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Porkilo | Un kilo. Cero sobras.",
-    description: "Panceta premium por kilos. Cupos semanales limitados.",
+    title: "Porkilo | Panceta completa a domicilio en Pasto",
+    description: "Panceta crujiente desde $49.000, con acompañamientos, toppings y domicilio gratis. Cupos semanales limitados.",
     images: ["/og.png"],
   },
 };

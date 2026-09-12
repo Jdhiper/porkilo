@@ -65,8 +65,11 @@ export default function Hero() {
           />
         </div>
 
-        <div className="relative z-20 mx-auto mt-[30svh] w-full max-w-xl sm:mt-[25svh] lg:mt-[21svh]">
-          <div className="hero-offer-card grid items-center gap-4 rounded-[1.6rem] p-4 sm:grid-cols-[1fr_auto] sm:p-5">
+        <div className="relative z-20 mx-auto mt-[27svh] w-full max-w-xl sm:mt-[24svh] lg:mt-[20svh]">
+          <a href="#arma-tu-pedido" className="hero-offer-card grid items-center gap-3 rounded-[1.6rem] p-4 sm:grid-cols-[1fr_auto] sm:p-5" onClick={() => {
+            trackFunnelEvent("v2_cta_hero_click");
+            trackFunnelEvent("cta_hero_click");
+          }} aria-label="Armar pedido desde 49.000 pesos">
             <div className="flex min-w-0 flex-col items-center">
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--porkilo-orange-light)]">Dos tamaños para empezar</span>
               <div className="mt-2 grid w-full grid-cols-2 gap-2">
@@ -82,8 +85,8 @@ export default function Hero() {
               <p className="mt-2 text-xs font-semibold leading-relaxed text-white/75">Papas cocinadas, ají, maduro, arepitas + 2 toppings a elección</p>
               <span className="stock-pill">¡Solo quedan {offer.stockKg} kilos disponibles!</span>
             </div>
-            <a className="cta-primary min-w-44" href="#arma-tu-pedido" onClick={() => trackFunnelEvent("cta_hero_click")}>Pedir ahora <span aria-hidden="true">↓</span></a>
-          </div>
+            <span className="cta-primary min-w-44">Pedir ahora <span aria-hidden="true">↓</span></span>
+          </a>
         </div>
       </div>
     </section>

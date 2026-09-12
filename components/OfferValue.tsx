@@ -1,35 +1,30 @@
-import Image from "next/image";
+"use client";
+
 import { offer } from "@/data/offer";
+import { trackFunnelEvent } from "@/lib/funnel-analytics";
 
 export default function OfferValue() {
   return (
-    <section id="oferta" className="relative z-20 -mt-16 scroll-mt-24 px-4 pb-4 sm:px-6" aria-labelledby="included-title">
-      <div className="glass-panel mx-auto max-w-6xl rounded-[2rem] p-5 sm:p-7">
-        <div className="flex flex-col items-center text-center">
-          <p className="eyebrow">Tu Porkilo llega completo</p>
-          <h2 id="included-title" className="mt-2 text-2xl font-black tracking-[-0.04em] sm:text-3xl">Los $49.000 ya incluyen todo esto.</h2>
-          <p className="mt-2 max-w-2xl text-sm text-white/60">Papas, ají, maduro, arepitas y tus toppings, sin sumarlos al precio.</p>
+    <section id="oferta" className="offer-value-section relative z-20 -mt-12 scroll-mt-24 px-4 pb-2 sm:px-6" aria-labelledby="included-title">
+      <div className="glass-panel mx-auto max-w-6xl rounded-[1.35rem] p-3 sm:p-4">
+        <div className="offer-value-heading text-center sm:text-left">
+          <div>
+            <p className="eyebrow">Tu Porkilo llega completo</p>
+            <h2 id="included-title" className="mt-1 text-lg font-black tracking-[-0.04em] sm:text-xl">$49.000 incluyen todo esto</h2>
+          </div>
           <strong className="delivery-free-badge">Domicilio gratis</strong>
         </div>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="included-inline-list mt-2" aria-label="Todo lo incluido con tu Porkilo">
           {offer.bonuses.map((bonus) => (
-            <article key={bonus.id} className="bonus-card">
-              <div className="bonus-media">
-                {bonus.image ? (
-                  <Image src={bonus.image} alt="" fill sizes="(max-width: 768px) 5rem, 8rem" className="catalog-image object-contain" />
-                ) : (
-                  <span aria-hidden="true">✓</span>
-                )}
-              </div>
-              <div className="min-w-0">
-                <span className="bonus-included">Incluido</span>
-                <h3>{bonus.title}</h3>
-                <p>{bonus.description}</p>
-              </div>
-            </article>
+            <span key={bonus.id}>{bonus.title}</span>
           ))}
         </div>
+
+        <a href="#arma-tu-pedido" className="offer-inline-cta mt-2" onClick={() => {
+          trackFunnelEvent("v2_cta_included_click");
+          trackFunnelEvent("cta_included_click");
+        }}>Elegir mi Porkilo <span aria-hidden="true">↓</span></a>
       </div>
     </section>
   );

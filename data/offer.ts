@@ -1,6 +1,6 @@
 export const offer = {
   brand: "Porkilo",
-  whatsappNumber: "573113366903",
+  whatsappNumber: "573236284624",
   currency: "COP",
   locale: "es-CO",
   city: "Colombia",
